@@ -302,7 +302,14 @@ try {
 
         //initializing datepicker and timepicker
         initDatepicker("datepicker", "yy/mm/dd", "0");
-        jQuery("#start_time,#end_time").timepicker();
+        jQuery("#start_time, #end_time").timepicker();
+
+        jQuery(".datepicker").first().on('change', function (e) {
+            updateEndTime();
+        });
+        jQuery(".timepicker").first().on('change', function (e) {
+            updateEndTime();
+        });
     });
 
     function closeBox()
