@@ -84,12 +84,13 @@ try {
     if (isset($centreon->optGen['monitoring_dwt_duration_scale']) && $centreon->optGen['monitoring_dwt_duration_scale']) {
         $defaultScale = $centreon->optGen['monitoring_dwt_duration_scale'];
     }
+    $duration = $defaultDuration;
     if ($defaultScale == 'm') {
-        $defaultDuration *= 60;
+        $duration *= 60;
     } elseif ($defaultScale == 'h') {
-        $defaultDuration *= 3600;
+        $duration *= 3600;
     } elseif ($defaultScale == 'd') {
-        $defaultDuration *= 86400;
+        $duration *= 86400;
     }
 
     if ($cmd == 72 || $cmd == 75 || $cmd == 70 || $cmd == 74) {
@@ -158,8 +159,8 @@ try {
             $hourStart = $centreon->CentreonGMT->getDate("H", time(), $gmt);
             $minuteStart = $centreon->CentreonGMT->getDate("i", time(), $gmt);
 
-            $hourEnd = $centreon->CentreonGMT->getDate("H", time() + $defaultDuration, $gmt);
-            $minuteEnd = $centreon->CentreonGMT->getDate("i", time() + $defaultDuration, $gmt);
+            $hourEnd = $centreon->CentreonGMT->getDate("H", time() + $duration, $gmt);
+            $minuteEnd = $centreon->CentreonGMT->getDate("i", time() + $duration, $gmt);
 
             $template->assign('downtimeHostSvcLabel', _("Set downtime on services of hosts"));
             if ($cmd == 75) {
@@ -185,7 +186,12 @@ try {
 
             $template->assign('titleLabel', $title);
             $template->assign('submitLabel', _("Set Downtime"));
-            $template->assign('defaultDuration', 2);
+            $template->assign('defaultSecondDuration', $defaultScale == 's' ? $defaultDuration : '0');
+            $template->assign('defaultHourDuration', $defaultScale == 'h' ? $defaultDuration : '0');
+            $template->assign('defaultMinuteDuration', $defaultScale == 'm' ? $defaultDuration : '0');
+            $template->assign('defaultDayDuration',  $defaultScale == 'd' ? $defaultDuration : '0');
+            $template->assign('duration', $duration); // In seconds
+            $template->assign('secondsLabel', _("seconds"));
             $template->assign('daysLabel', _("days"));
             $template->assign('hoursLabel', _("hours"));
             $template->assign('minutesLabel', _("minutes"));
@@ -372,10 +378,12 @@ try {
             jQuery("[name=dayduration]").attr('disabled', true);
             jQuery("[name=hourduration]").attr('disabled', true);
             jQuery("[name=minuteduration]").attr('disabled', true);
+            jQuery("[name=secondduration]").attr('disabled', true);
         } else {
             jQuery("[name=dayduration]").removeAttr('disabled');
             jQuery("[name=hourduration]").removeAttr('disabled');
             jQuery("[name=minuteduration]").removeAttr('disabled');
+            jQuery("[name=secondduration]").removeAttr('disabled');
         }
     }
 </script>
