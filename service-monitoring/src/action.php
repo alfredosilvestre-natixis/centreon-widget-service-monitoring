@@ -331,8 +331,8 @@ try {
         jQuery(".datepicker").first().on('change', function (e) {
             updateEndTime();
         });
-        jQuery(".timepicker").first().on('change', function (e) {
-            updateEndTime();
+        jQuery(".datepicker").last().on('change', function (e) {
+            updateStartTime();
         });
     });
 
