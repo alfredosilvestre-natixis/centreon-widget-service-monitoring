@@ -328,12 +328,7 @@ try {
         initDatepicker("datepicker", "yy/mm/dd", "0");
         jQuery("#start_time, #end_time").timepicker();
 
-        jQuery(".datepicker").first().on('change', function (e) {
-            updateEndTime();
-        });
-        jQuery(".datepicker").last().on('change', function (e) {
-            updateStartTime();
-        });
+        turnOnEvents();
     });
 
     function closeBox()
