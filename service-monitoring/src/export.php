@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright 2005-2014 MERETHIS
+ * Copyright 2005-2019 CENTREON
  * Centreon is developed by : Julien Mathis and Romain Le Merlus under
  * GPL Licence 2.0.
  *
@@ -317,15 +317,15 @@ if (isset($preferences['output_search']) && $preferences['output_search'] != "")
             'type' => PDO::PARAM_STR
         ];
         $serviceOutputCondition = ' s.output ' . CentreonUtils::operandToMysqlFormat($op) . ' :service_output ';
-        $query = CentreonUtils::conditionBuilder($query, $servicegroupCondition);
+        $query = CentreonUtils::conditionBuilder($query, $serviceOutputCondition);
     }
 }
-$orderby = "hostname ASC , description ASC";
+$orderBy = "hostname ASC , description ASC";
 if (isset($preferences['order_by']) && $preferences['order_by'] != "") {
-    $orderby = $preferences['order_by'];
+    $orderBy = $preferences['order_by'];
 }
 
-$query .= "ORDER BY " . $orderby;
+$query .= "ORDER BY " . $orderBy;
 
 $res = $dbb->prepare($query);
 
