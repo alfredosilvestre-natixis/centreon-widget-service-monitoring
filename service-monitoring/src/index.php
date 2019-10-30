@@ -349,7 +349,6 @@ if (isset($preferences['output_search']) && $preferences['output_search'] != "")
     }
 }
 if (!$centreon->user->admin) {
-    $pearDB = $db;
     $aclObj = new CentreonACL($centreon->user->user_id, $centreon->user->admin);
     $groupList = $aclObj->getAccessGroupsString();
     $query .= " AND h.host_id = acl.host_id
