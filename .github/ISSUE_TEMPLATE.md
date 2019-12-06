@@ -37,9 +37,9 @@ $ rpm -qa | grep centreon-widget-service-monitoring
 
 For the deb based systems
 
--- Copy/Paste the result of the following command --
-```
-$ dpkg -l | grep centreon-widget-service-monitoring
+* Installation method
+* Version of the widget
+
 ```
 ***Operating System***
 
