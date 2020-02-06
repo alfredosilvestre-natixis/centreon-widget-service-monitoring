@@ -1,6 +1,6 @@
 <?php
-/**
- * Copyright 2005-2019 CENTREON
+/*
+ * Copyright 2005-2020 Centreon
  * Centreon is developed by : Julien Mathis and Romain Le Merlus under
  * GPL Licence 2.0.
  *
@@ -59,7 +59,9 @@ if (CentreonSession::checkSession(session_id(), $db) == 0) {
 // Init Smarty
 $template = new Smarty();
 $template = initSmartyTplForPopup(
-    $centreon_path . 'www/widgets/service-monitoring/src/', $template, './',
+    $centreon_path . 'www/widgets/service-monitoring/src/',
+    $template,
+    './',
     $centreon_path
 );
 
@@ -69,8 +71,8 @@ $media = new CentreonMedia($db);
 
 $centreon = $_SESSION['centreon'];
 $centreonWebPath = trim($centreon->optGen['oreon_web_path'], '/');
-$widgetId = $_REQUEST['widgetId'];
-$page = $_REQUEST['page'];
+$widgetId = filter_input(INPUT_GET, 'widgetId', FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
+$page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
 
 /**
  * @var $dbb CentreonDB
@@ -149,10 +151,10 @@ if (!$centreon->user->admin) {
     $query .= ' , centreon_acl acl ';
 }
 
-$query .= ' WHERE s.host_id = h.host_id ';
-$query .= ' AND h.name NOT LIKE \'_Module_%\' ';
-$query .= ' AND s.enabled = 1 ';
-$query .= ' AND h.enabled = 1 ';
+$query .= ' WHERE s.host_id = h.host_id
+    AND h.name NOT LIKE \'_Module_%\'
+    AND s.enabled = 1
+    AND h.enabled = 1 ';
 
 if (isset($preferences['host_name_search']) && $preferences['host_name_search'] != '') {
     $tab = explode(' ', $preferences['host_name_search']);
@@ -394,7 +396,8 @@ if (trim($orderBy)) {
     $query .= "ORDER BY {$orderBy}";
 }
 
-$query .= " LIMIT " . ($page * $preferences['entries']) . "," . $preferences['entries'];
+$num = filter_var($preferences['entries'], FILTER_VALIDATE_INT) ?: 10;
+$query .= " LIMIT " . ($page * $num) . "," . $num;
 
 $res = $dbb->prepare($query);
 
@@ -407,16 +410,18 @@ $res->execute();
 
 $nbRows = $dbb->numberRows();
 $data = [];
-$outputLength = $preferences['output_length'] ? $preferences['output_length'] : 50;
-$commentLength = $preferences['comment_length'] ? $preferences['comment_length'] : 50;
+$outputLength = $preferences['output_length'] ?: 50;
+$commentLength = $preferences['comment_length'] ?: 50;
 
 $hostObj = new CentreonHost($db);
 $svcObj = new CentreonService($db);
 $gmt = new CentreonGMT($db);
 $gmt->getMyGMTFromSession(session_id(), $db);
 $allowedActionProtocols = ['http[s]?', '//', 'ssh', 'rdp', 'ftp', 'sftp'];
-$allowedProtocolsRegex = '#(^' . implode(')|(^',
-        $allowedActionProtocols) . ')#'; // String starting with one of these protocols
+$allowedProtocolsRegex = '#(^' . implode(
+    ')|(^',
+    $allowedActionProtocols
+) . ')#'; // String starting with one of these protocols
 
 while ($row = $res->fetch()) {
     foreach ($row as $key => $value) {
@@ -454,7 +459,8 @@ while ($row = $res->fetch()) {
     $data[$row['host_id'] . '_' . $row['service_id']]['last_hard_state_change'] = $valueLastHardState;
 
     // check_attempt
-    $valueCheckAttempt = "{$row['check_attempt']}/{$row['max_check_attempts']} ({$aStateType[$row['state_type']]})";
+    $valueCheckAttempt = $row['check_attempt'] . "/" .
+        $row['max_check_attempts'] . " (" . $aStateType[$row['state_type']] . ")";
     $data[$row['host_id'] . '_' . $row['service_id']]['check_attempt'] = $valueCheckAttempt;
 
     // s_state
@@ -477,8 +483,12 @@ while ($row = $res->fetch()) {
             $valueHActionUrl = '//' . $valueHActionUrl;
         }
 
-        $valueHActionUrl = CentreonUtils::escapeSecure($hostObj->replaceMacroInString($row['hostname'],
-            $valueHActionUrl));
+        $valueHActionUrl = CentreonUtils::escapeSecure(
+            $hostObj->replaceMacroInString(
+                $row['hostname'],
+                $valueHActionUrl
+            )
+        );
         $data[$row['host_id'] . '_' . $row['service_id']]['h_action_url'] = $valueHActionUrl;
     }
 
@@ -491,8 +501,12 @@ while ($row = $res->fetch()) {
             $valueHNotesUrl = '//' . $valueHNotesUrl;
         }
 
-        $valueHNotesUrl = CentreonUtils::escapeSecure($hostObj->replaceMacroInString($row['hostname'],
-            $valueHNotesUrl));
+        $valueHNotesUrl = CentreonUtils::escapeSecure(
+            $hostObj->replaceMacroInString(
+                $row['hostname'],
+                $valueHNotesUrl
+            )
+        );
         $data[$row['host_id'] . '_' . $row['service_id']]['h_notes_url'] = $valueHNotesUrl;
     }
 
@@ -558,7 +572,7 @@ while ($row = $res->fetch()) {
             $commentSql = 'SELECT comment_data AS data FROM downtimes';
         }
 
-        $commentSql .= " WHERE host_id = {$row['host_id']} AND service_id = {$row['service_id']}";
+        $commentSql .= " WHERE host_id = " . $row['host_id'] . " AND service_id = " . $row['service_id'];
         $commentSql .= ' ORDER BY entry_time DESC LIMIT 1';
         $commentResult = $dbb->query($commentSql);
 
@@ -580,7 +594,9 @@ while ($row = $res->fetch()) {
     );
 }
 
-$autoRefresh = $preferences['refresh_interval'];
+$autoRefresh = (isset($preferences['refresh_interval']) && (int)$preferences['refresh_interval'] > 0)
+    ? (int)$preferences['refresh_interval']
+    : 30;
 $template->assign('widgetId', $widgetId);
 $template->assign('autoRefresh', $autoRefresh);
 $template->assign('preferences', $preferences);
