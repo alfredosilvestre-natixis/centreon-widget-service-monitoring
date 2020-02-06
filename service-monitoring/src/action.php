@@ -1,6 +1,6 @@
 <?php
-/**
- * Copyright 2005-2018 CENTREON
+/*
+ * Copyright 2005-2020 Centreon
  * Centreon is developed by : Julien Mathis and Romain Le Merlus under
  * GPL Licence 2.0.
  *
@@ -32,6 +32,7 @@
  * For more information : contact@centreon.com
  *
  */
+
 require_once "../../require.php";
 require_once $centreon_path . 'www/class/centreon.class.php';
 require_once $centreon_path . 'www/class/centreonSession.class.php';
@@ -58,8 +59,8 @@ try {
     }
     $centreon = $_SESSION['centreon'];
     $oreon = $centreon;
-    $cmd = $_REQUEST['cmd'];
-    $wId = $_REQUEST['wid'];
+    $cmd = filter_input(INPUT_GET, 'cmd', FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
+    $wId = filter_input(INPUT_GET, 'wid', FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
     $selections = explode(",", $_REQUEST['selection']);
     $externalCmd = new CentreonExternalCommand($centreon);
 
@@ -114,7 +115,9 @@ try {
 
             /* Default ack options */
             $persistent_checked = '';
-            if (isset($centreon->optGen['monitoring_ack_persistent']) && $centreon->optGen['monitoring_ack_persistent']) {
+            if (isset($centreon->optGen['monitoring_ack_persistent'])
+                && $centreon->optGen['monitoring_ack_persistent']
+            ) {
                 $persistent_checked = 'checked';
             }
             $template->assign('persistent_checked', $persistent_checked);
@@ -138,7 +141,9 @@ try {
             $template->assign('process_service_checked', $process_service_checked);
 
             $force_active_checked = '';
-            if (isset($centreon->optGen['monitoring_ack_active_checks']) && $centreon->optGen['monitoring_ack_active_checks']) {
+            if (isset($centreon->optGen['monitoring_ack_active_checks'])
+                && $centreon->optGen['monitoring_ack_active_checks']
+            ) {
                 $force_active_checked = 'checked';
             }
             $template->assign('force_active_checked', $force_active_checked);
@@ -147,7 +152,6 @@ try {
             $template->assign('submitLabel', _("Acknowledge"));
             $template->display('acknowledge.ihtml');
         } elseif ($cmd == 75 || $cmd == 74) {
-
             $hourStart = $centreon->CentreonGMT->getDate("H", time(), $gmt);
             $minuteStart = $centreon->CentreonGMT->getDate("i", time(), $gmt);
 
@@ -198,61 +202,61 @@ try {
         $isSvcCommand = false;
         switch ($cmd) {
             /* service: schedule check */
-            case 3 :
+            case 3:
                 $command = "SCHEDULE_SVC_CHECK;%s;" . time();
                 $isSvcCommand = true;
                 break;
             /* service: schedule forced check */
-            case 4 :
+            case 4:
                 $command = "SCHEDULE_FORCED_SVC_CHECK;%s;" . time();
                 $isSvcCommand = true;
                 break;
             /* service: remove ack */
-            case 71 :
+            case 71:
                 $command = "REMOVE_SVC_ACKNOWLEDGEMENT;%s";
                 $isSvcCommand = true;
                 break;
             /* service: enable notif */
-            case 80 :
+            case 80:
                 $command = "ENABLE_SVC_NOTIFICATIONS;%s";
                 $isSvcCommand = true;
                 break;
             /* service: enable notif */
-            case 81 :
+            case 81:
                 $command = "DISABLE_SVC_NOTIFICATIONS;%s";
                 $isSvcCommand = true;
                 break;
             /* service: enable check */
-            case 90 :
+            case 90:
                 $command = "ENABLE_SVC_CHECK;%s";
                 $isSvcCommand = true;
                 break;
             /* service: disable check */
-            case 91 :
+            case 91:
                 $command = "DISABLE_SVC_CHECK;%s";
                 $isSvcCommand = true;
                 break;
             /* host: remove ack */
-            case 73 :
+            case 73:
                 $command = "REMOVE_HOST_ACKNOWLEDGEMENT;%s";
                 break;
             /* host: enable notif */
-            case 82 :
+            case 82:
                 $command = "ENABLE_HOST_NOTIFICATIONS;%s";
                 break;
             /* host: disable notif */
-            case 83 :
+            case 83:
                 $command = "DISABLE_HOST_NOTIFICATIONS;%s";
                 break;
             /* host: enable check */
-            case 92 :
+            case 92:
                 $command = "ENABLE_HOST_CHECK;%s";
                 break;
             /* host: disable check */
-            case 93 :
+            case 93:
                 $command = "DISABLE_HOST_CHECK;%s";
                 break;
-            default :
+            default:
                 throw new Exception('Unknown command');
                 break;
         }
@@ -267,9 +271,9 @@ try {
                 if (count($tmp) != 2) {
                     throw new Exception('Incorrect id format');
                 }
-                $hostId = $tmp[0];
-                $svcId = $tmp[1];
-                if ($hostId != 0 && $svcId != 0) {
+                $hostId = filter_var($tmp[0], FILTER_VALIDATE_INT) ?: 0;
+                $svcId = filter_var($tmp[1], FILTER_VALIDATE_INT) ?: 0;
+                if ($hostId !== 0 && $svcId !== 0) {
                     $hostname = $hostObj->getHostName($hostId);
                     $svcDesc = $svcObj->getServiceDesc($svcId);
                     if ($isSvcCommand === true) {
@@ -277,9 +281,11 @@ try {
                     } else {
                         $cmdParam = $hostname;
                     }
-                    $externalCmd->$externalCommandMethod(sprintf(
-                        $command,
-                        $cmdParam),
+                    $externalCmd->$externalCommandMethod(
+                        sprintf(
+                            $command,
+                            $cmdParam
+                        ),
                         $hostObj->getHostPollerId($hostId)
                     );
                 }

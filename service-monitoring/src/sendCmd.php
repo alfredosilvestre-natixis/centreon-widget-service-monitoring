@@ -1,6 +1,6 @@
 <?php
-/**
- * Copyright 2005-2018 CENTREON
+/*
+ * Copyright 2005-2020 Centreon
  * Centreon is developed by : Julien Mathis and Romain Le Merlus under
  * GPL Licence 2.0.
  *
@@ -58,8 +58,9 @@ try {
     if (CentreonSession::checkSession(session_id(), $db) == 0) {
         throw new Exception('Invalid session');
     }
-    $type = $_POST['cmdType'];
-    $cmd = $_POST['cmd'];
+    $type = filter_input(INPUT_POST, 'cmdType', FILTER_SANITIZE_STRING, ['options' => ['default' => '']]);
+    $cmd = filter_input(INPUT_POST, 'cmd', FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
+
     $centreon = $_SESSION['centreon'];
     $selections = explode(',', $_POST['selection']);
     $oreon = $centreon;
@@ -67,13 +68,13 @@ try {
 
     $hostObj = new CentreonHost($db);
     $svcObj = new CentreonService($db);
-    $command = "";
-    $author = $_POST['author'];
-    $comment = "";
+    $command = '';
+    $author = filter_input(INPUT_POST, 'author', FILTER_SANITIZE_STRING, ['options' => ['default' => '']]);
+    $comment = '';
     if (isset($_POST['comment'])) {
-        $comment = $_POST['comment'];
+        $comment = filter_input(INPUT_POST, 'comment', FILTER_SANITIZE_STRING, ['options' => ['default' => '']]);
     }
-    if ($type == 'ack') {
+    if ($type === 'ack') {
         $persistent = 0;
         $sticky = 0;
         $notify = 0;
@@ -89,10 +90,10 @@ try {
         $command = "ACKNOWLEDGE_HOST_PROBLEM;%s;$sticky;$notify;$persistent;$author;$comment";
         $commandSvc = "ACKNOWLEDGE_SVC_PROBLEM;%s;%s;$sticky;$notify;$persistent;$author;$comment";
         if (isset($_POST['forcecheck'])) {
-            $forceCmd = "SCHEDULE_FORCED_HOST_CHECK;%s;".time(); 
+            $forceCmd = "SCHEDULE_FORCED_HOST_CHECK;%s;".time();
             $forceCmdSvc = "SCHEDULE_FORCED_SVC_CHECK;%s;%s;".time();
         }
-    } elseif ($type == 'downtime') {
+    } elseif ($type === 'downtime') {
         $fixed = 0;
         if (isset($_POST['fixed'])) {
             $fixed = 1;
@@ -109,7 +110,7 @@ try {
         }
 
         if (!isset($_POST['start_time']) || !isset($_POST['end_time'])) {
-            throw new Exception ('Missing downtime start/end');
+            throw new Exception('Missing downtime start/end');
         }
         list($tmpHstart, $tmpMstart) = array_map('trim', explode(':', $_POST['start_time']));
         list($tmpHend, $tmpMend) = array_map('trim', explode(':', $_POST['end_time']));
@@ -124,7 +125,7 @@ try {
     } else {
         throw new Exception('Unknown command');
     }
-    if ($command != "") {
+    if ($command !== '') {
         $externalCommandMethod = 'set_process_command';
         if (method_exists($externalCmd, 'setProcessCommand')) {
             $externalCommandMethod = 'setProcessCommand';
@@ -134,13 +135,13 @@ try {
             if (count($tmp) != 2) {
                 throw new Exception('Incorrect id format');
             }
-            $hostId = $tmp[0];
-            $svcId = $tmp[1];
-            if ($hostId != 0 && $svcId != 0) {
+            $hostId = filter_var($tmp[0], FILTER_VALIDATE_INT) ?: 0;
+            $svcId = filter_var($tmp[1], FILTER_VALIDATE_INT) ?: 0;
+            if ($hostId !== 0 && $svcId !== 0) {
                 $hostname = $hostObj->getHostName($hostId);
                 $svcDesc = $svcObj->getServiceDesc($svcId);
                 $pollerId = $hostObj->getHostPollerId($hostId);
-                if ($cmd == 70 || $cmd == 74) {
+                if ($cmd === 70 || $cmd === 74) {
                     $externalCmd->$externalCommandMethod(sprintf($commandSvc, $hostname, $svcDesc), $pollerId);
                     if (isset($forceCmdSvc)) {
                         $externalCmd->$externalCommandMethod(sprintf($forceCmdSvc, $hostname, $svcDesc), $pollerId);
@@ -153,7 +154,7 @@ try {
                 }
                 if (isset($_POST['processServices'])) {
                     $services = $svcObj->getServiceId(null, $hostname);
-                    foreach($services as $svcDesc => $svcId) {
+                    foreach ($services as $svcDesc => $svcId) {
                         $externalCmd->$externalCommandMethod(sprintf($commandSvc, $hostname, $svcDesc), $pollerId);
                         if (isset($forceCmdSvc)) {
                             $externalCmd->$externalCommandMethod(sprintf($forceCmdSvc, $hostname, $svcDesc), $pollerId);
